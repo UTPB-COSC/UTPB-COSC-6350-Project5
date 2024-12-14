@@ -1,0 +1,28 @@
+from Crypto.Cipher import AES
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+import os
+
+def aes_ccm_encrypt(plaintext, key):
+    nonce = os.urandom(11)  # 11-byte nonce for AES-CCM
+    cipher = AES.new(key, AES.MODE_CCM, nonce=nonce)
+    ciphertext, tag = cipher.encrypt_and_digest(plaintext.encode())
+
+    return nonce, ciphertext, tag
+
+def aes_ccm_decrypt(nonce, ciphertext, tag, key):
+
+    cipher = AES.new(key, AES.MODE_CCM, nonce=nonce)
+    plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+    return plaintext.decode()
+
+def derive_session_key(shared_secret):
+    hkdf = HKDF(
+        algorithm=hashes.SHA256(),
+        length=16,  # 16-byte key for AES-128
+        salt=None,
+        info=b"Bluetooth/Zigbee Session Key",
+        backend=default_backend()
+    )
+    return hkdf.derive(shared_secret)
